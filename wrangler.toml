@@ -1,0 +1,19 @@
+name = "time-qr"
+type = "javascript"
+zone_id = ""
+account_id = ""
+route = ""
+workers_dev = true
+compatibility_date = "2022-02-25"
+
+kv-namespaces = [
+    { binding = "KV_STORAGE", id = "9f7fd0d25df4437e9651349aa9880eec" },
+]
+
+[vars]
+EDIT_TOKEN = "STI2"
+
+[build]
+command = "npm install && npm run build"
+[build.upload]
+format = "service-worker"
