@@ -22,10 +22,18 @@ export default `<!DOCTYPE html>
             <div class="card-body">
                 <h3 class="card-title">Cours N°{{ id + 1 }}</h3>
 
-                <div class="mb-3">
-                    <label class="form-label" :for="'url-' + id">URL de la vidéo</label>
-                    <input v-model="info.url" type="url" class="form-control" :id="'url-' + id" required
-                           placeholder="https://tube.switch.ch/videos/...">
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" :for="'url-' + id">URL de la vidéo</label>
+                        <input v-model="info.url" type="url" class="form-control" :id="'url-' + id"
+                               required placeholder="https://tube.switch.ch/videos/...">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" :for="'file-' + id">PDF du cours</label>
+                        <input type="file" class="form-control" :id="'file-' + id"
+                                @change="updateCourse($event, info.times)" accept=".pdf">
+                    </div>
                 </div>
 
                 <h3 class="card-title">Slides</h3>
@@ -40,8 +48,11 @@ export default `<!DOCTYPE html>
                     </div>
                 </div>
 
-                <button type="button" class="btn btn-primary btn-small mt-1" @click="info.times.push('')">
-                    Ajouter slide au cours N°{{ id + 1 }}
+                <button type="button" class="btn btn-primary btn-small m-2" @click="info.times.push('')">
+                    Ajouter une slide au cours N°{{ id + 1 }}
+                </button>
+                <button type="button" class="btn btn-warning btn-small m-1" @click="info.times.pop()">
+                    Retirer une slide du cours N°{{ id + 1 }}
                 </button>
             </div>
         </div>
@@ -50,6 +61,10 @@ export default `<!DOCTYPE html>
             <div class="col-lg-3 col-md-6 d-grid mb-3">
                 <button type="button" class="btn btn-primary mb-2" @click="addCourse">
                     Ajouter un cours
+                </button>
+                
+                <button type="button" class="btn btn-warning mb-2" @click="data.pop()">
+                    Retirer un cours
                 </button>
 
                 <button type="submit" class="btn btn-success">
@@ -96,12 +111,12 @@ export default `<!DOCTYPE html>
         <div class="row g-3">
             <div class="col-md-6 mb-3">
                 <label for="coursePdf" class="form-label">N° du cours</label>
-                <input v-model="pdfNumber" class="form-control" type="number" id="coursePdf">
+                <input v-model="pdfNumber" class="form-control" type="number" id="coursePdf" required>
             </div>
 
             <div class="col-md-6 mb-3">
                 <label for="formFile" class="form-label">PDF</label>
-                <input class="form-control" type="file" id="formFile" accept="application/pdf">
+                <input class="form-control" type="file" id="formFile" accept="application/pdf" required>
             </div>
         </div>
 
@@ -160,6 +175,21 @@ export default `<!DOCTYPE html>
                     url: '',
                     times: []
                 })
+            },
+            updateCourse(event, times) {
+                const reader = new FileReader()
+
+                reader.onload = function () {
+                    const array = new Uint8Array(this.result)
+                    
+                    PDFLib.PDFDocument.load(array).then((doc) => {
+                        for (let page of doc.getPages()) {
+                            times.push('')
+                        }
+                    })
+                }
+
+                reader.readAsArrayBuffer(event.target.files[0])
             },
             save() {
                 console.log(this.data)
