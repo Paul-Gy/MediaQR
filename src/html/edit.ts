@@ -184,7 +184,8 @@ export default `<!DOCTYPE html>
                     
                     PDFLib.PDFDocument.load(array).then((doc) => {
                         for (let page of doc.getPages()) {
-                            times.push('')
+                            times = [];
+                            times.push('');
                         }
                     })
                 }
