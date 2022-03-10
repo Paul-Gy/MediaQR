@@ -125,7 +125,11 @@ export default `<!DOCTYPE html>
         </button>
     </form>
 
-    <p class="text-muted">Réalisé par Paul Gerry avec la participation de Samuel Wahba</p>
+    <p class="text-muted">
+        Réalisé par
+        <a href="https://people.epfl.ch/paul.gerry">Paul Gerry</a> avec la participation
+        de <a href="https://people.epfl.ch/samuel.wahba">Samuel Wahba</a>.
+    </p>
 </div>
 
 <script>
@@ -138,7 +142,7 @@ export default `<!DOCTYPE html>
                 login: false,
                 data: null,
                 loading: false,
-                pdfNumber: 1,
+                pdfNumber: '',
             }
         },
         methods: {
@@ -193,8 +197,6 @@ export default `<!DOCTYPE html>
                 reader.readAsArrayBuffer(event.target.files[0])
             },
             save() {
-                console.log(this.data)
-
                 this.loading = true
                 this.success = null
                 this.error = null
@@ -248,7 +250,7 @@ export default `<!DOCTYPE html>
 
                         const pdfBytes = await pdfDoc.save()
 
-                        download(pdfBytes, 'Cours.pdf', 'application/pdf')
+                        download(pdfBytes, 'Cours ' + this.pdfNumber + '.pdf', 'application/pdf')
                     }
                 }
             },

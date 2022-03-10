@@ -26,9 +26,14 @@ export default `<!DOCTYPE html>
 
     <h1>Time QR Code - Physique STI</h1>
 
-    <h2 class="mb-4">Ce cours n'est pas encore disponible!</h2>
-    
-    <p class="text-muted">Réalisé par Paul Gerry avec la participation de Samuel Wahba</p>
+    <h2>Ce cours n'est pas encore disponible!</h2>
+    <h3 class="mb-4">Il le sera une fois la vidéo en ligne.</h3>
+
+    <p class="text-muted">
+        Réalisé par
+        <a href="https://people.epfl.ch/paul.gerry">Paul Gerry</a> avec la participation
+        de <a href="https://people.epfl.ch/samuel.wahba">Samuel Wahba</a>.
+    </p>
 </div>
 </body>
 </html>`

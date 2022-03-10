@@ -54,11 +54,15 @@ export default `<!DOCTYPE html>
                 </a>
             </div>
 
-            <img :src="'/qrcode/' + course + '/' + slide" height="150" width="150">
+            <img :src="'/qrcode/' + course + '/' + slide" height="150" width="150" alt="QR Code">
         </div>
     </form>
     
-    <p class="text-muted">Réalisé par Paul Gerry avec la participation de Samuel Wahba</p>
+    <p class="text-muted">
+        Réalisé par
+        <a href="https://people.epfl.ch/paul.gerry">Paul Gerry</a> avec la participation
+        de <a href="https://people.epfl.ch/samuel.wahba">Samuel Wahba</a>.
+    </p>
 </div>
 
 <script>
