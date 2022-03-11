@@ -187,8 +187,8 @@ export default `<!DOCTYPE html>
                     const array = new Uint8Array(this.result)
                     
                     PDFLib.PDFDocument.load(array).then((doc) => {
+                        times = [];
                         for (let page of doc.getPages()) {
-                            times = [];
                             times.push('');
                         }
                     })
