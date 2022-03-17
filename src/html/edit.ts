@@ -32,7 +32,7 @@ export default `<!DOCTYPE html>
                     <div class="col-md-6 mb-3">
                         <label class="form-label" :for="'file-' + id">PDF du cours</label>
                         <input type="file" class="form-control" :id="'file-' + id"
-                                @change="updateCourse($event, info.times)" accept=".pdf">
+                                @change="updateCourse($event, info)" accept=".pdf">
                     </div>
                 </div>
 
@@ -180,21 +180,25 @@ export default `<!DOCTYPE html>
                     times: []
                 })
             },
-            updateCourse(event, times) {
+            updateCourse(event, info) {
                 const reader = new FileReader()
-
-                reader.onload = function () {
-                    const array = new Uint8Array(this.result)
-                    
-                    PDFLib.PDFDocument.load(array).then((doc) => {
-                        times = [];
-                        for (let page of doc.getPages()) {
-                            times.push('');
-                        }
-                    })
+                const file = event.target.files[0];
+                
+                if (!file) {
+                    return
                 }
 
-                reader.readAsArrayBuffer(event.target.files[0])
+                reader.onload = async function () {
+                    const array = new Uint8Array(this.result)                    
+                    const pdfDoc = await PDFLib.PDFDocument.load(array)
+                    info.times = []
+
+                    for (let page of pdfDoc.getPages()) {
+                        info.times.push('')
+                    }
+                }
+
+                reader.readAsArrayBuffer(file)
             },
             save() {
                 this.loading = true
