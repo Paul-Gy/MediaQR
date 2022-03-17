@@ -3,6 +3,7 @@ import { error, json, status } from 'itty-router-extras'
 import html from './html/home'
 import edit from './html/edit'
 import notFound from './html/404'
+import notFoundError from './html/error'
 
 declare const EDIT_TOKEN: string
 declare const KV_STORAGE: KVNamespace
@@ -80,6 +81,12 @@ router
 
     if (!time) {
       return missing()
+    }
+
+    if (time == '-1') {
+      return new Response(notFoundError, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      })
     }
 
     return Response.redirect(info.url + (slide > 0 ? '#' + time : ''))

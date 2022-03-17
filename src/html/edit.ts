@@ -42,7 +42,7 @@ export default `<!DOCTYPE html>
                     <div v-for="(time, idd) in info.times" :key="idd" class="mb-3 col-md-6">
                         <div class="input-group">
                             <span class="input-group-text">Slide N°{{ idd + 1 }}</span>
-                            <input v-model="info.times[idd]" type="text" pattern="[0-9]+(:[0-9]+)?(:[0-9]+)?" class="form-control"
+                            <input v-model="info.times[idd]" type="text" pattern="[0-9]+(:[0-9]+)?(:[0-9]+)?|(\\-1)" class="form-control"
                                    placeholder="1:23">
                         </div>
                     </div>
