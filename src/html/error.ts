@@ -5,10 +5,11 @@ export default `<!DOCTYPE html>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
-    <title>404 - Time QR</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.prod.js"></script>
+    <title>Cours non disponible - Time QR</title>
 </head>
 <body>
-<div class="container text-center my-5">
+<div id="app" class="container text-center my-5">
     <div class="row justify-content-center mb-3">
         <div class="col-md-6 col-lg-4">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 182.4 53" fill="#f00">
@@ -32,7 +33,7 @@ export default `<!DOCTYPE html>
     <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" width="350px"
          height="350px" class="img-fluid mb-3">
         <defs>
-            <linearGradient v-if="Math.random() * 10 > 9" id="OYgUyNjocE5tCCup-ya0-a" x1="30.322" x2="520.436" y1="508.379" y2="18.265"
+            <linearGradient v-if="Math.random() >= 0.9" id="OYgUyNjocE5tCCup-ya0-a" x1="30.322" x2="520.436" y1="508.379" y2="18.265"
                             gradientUnits="userSpaceOnUse">
                 <stop offset="0" stop-color="">
                     <animate attributeName="stop-color"
@@ -52,11 +53,9 @@ export default `<!DOCTYPE html>
             </linearGradient>
             <linearGradient v-else id="OYgUyNjocE5tCCup-ya0-a" x1="30.322" x2="520.436" y1="508.379" y2="18.265"
                             gradientUnits="userSpaceOnUse">
-                <stop offset="0" stop-color="">
-                    <animate attributeName="stop-color"
-                             values="#000000" dur="2s"
-                             repeatCount="indefinite"/>
-                </stop>
+                <stop offset="0" stop-color="#003f8a"/>
+                <stop offset=".518" stop-color="#00d7df"/>
+                <stop offset="1" stop-color="#006df0"/>
             </linearGradient>
             <linearGradient id="OYgUyNjocE5tCCup-ya0-b" x1="66.145" x2="556.258" y1="544.201" y2="54.087"
                             xlink:href="#OYgUyNjocE5tCCup-ya0-a"/>
@@ -86,6 +85,10 @@ export default `<!DOCTYPE html>
         de <a href="https://people.epfl.ch/samuel.wahba">Samuel Wahba</a>.
     </p>
 </div>
+
+<script>
+    Vue.createApp({}).mount('#app')
+</script>
 </body>
 </html>
 `
