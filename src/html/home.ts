@@ -59,8 +59,8 @@ export default `<!DOCTYPE html>
     </form>
    
     <hr>
-    <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mb-5" tabindex="-1" role="button" aria-disabled="true">Switchtube</a>
-    <hr>
+    
+    <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mt-3 mb-5" tabindex="-1" role="button" aria-disabled="true">Switchtube</a>
     
     <p class="text-muted">
         Réalisé par

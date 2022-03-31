@@ -6,7 +6,6 @@ export default `<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.4.0/dist/pdf-lib.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/downloadjs@1.4.7/download.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.prod.js"></script>
     <title>Edition - Time QR</title>
 </head>
@@ -42,7 +41,7 @@ export default `<!DOCTYPE html>
                     <div v-for="(time, idd) in info.times" :key="idd" class="mb-3 col-md-6">
                         <div class="input-group">
                             <span class="input-group-text">Slide N°{{ idd + 1 }}</span>
-                            <input v-model="info.times[idd]" type="text" pattern="[0-9]+(:[0-9]+)?(:[0-9]+)?|(\\-1)" class="form-control"
+                            <input v-model="info.times[idd]" type="text" pattern="[0-9]+(:[0-9]+)?(:[0-9]+)?|(-1)" class="form-control"
                                    placeholder="1:23">
                         </div>
                     </div>
@@ -67,17 +66,13 @@ export default `<!DOCTYPE html>
                     Retirer un cours
                 </button>
 
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success" :disabled="loading">
                     <span v-if="loading" class="spinner-border spinner-border-sm"></span>
                     Enregistrer
                 </button>
             </div>
         </div>
     </form>
-    
-    <hr>
-    <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mb-2" tabindex="-1" role="button" aria-disabled="true">Switchtube</a>
-    <hr>
 
     <form v-else class="row justify-content-center" @submit.prevent="auth">
         <div class="col-lg-3 col-md-6">
@@ -94,6 +89,10 @@ export default `<!DOCTYPE html>
             </div>
         </div>
     </form>
+    
+    <hr>
+        <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mx-2" tabindex="-1" role="button" aria-disabled="true">Switchtube</a>
+    <hr>
 
     <div class="row justify-content-center mb-3">
         <div class="col-md-6 mt-3">
@@ -106,28 +105,6 @@ export default `<!DOCTYPE html>
             </div>
         </div>
     </div>
-
-    <hr class="my-3">
-
-    <h2>Auto PDF</h2>
-
-    <form method="GET" @submit.prevent="createPdf" class="mb-4">
-        <div class="row g-3">
-            <div class="col-md-6 mb-3">
-                <label for="coursePdf" class="form-label">N° du cours</label>
-                <input v-model="pdfNumber" class="form-control" type="number" id="coursePdf" required>
-            </div>
-
-            <div class="col-md-6 mb-3">
-                <label for="formFile" class="form-label">PDF</label>
-                <input class="form-control" type="file" id="formFile" accept="application/pdf" required>
-            </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary">
-            Go !
-        </button>
-    </form>
 
     <p class="text-muted">
         Réalisé par
@@ -228,39 +205,6 @@ export default `<!DOCTYPE html>
                     this.error = err
                     this.loading = false
                 })
-            },
-            createPdf() {
-                const input = document.getElementById('formFile')
-                const reader = new FileReader()
-
-                reader.readAsArrayBuffer(input.files[0])
-                reader.onloadend = async (evt) => {
-                    if (evt.target.readyState === FileReader.DONE) {
-                        const arrayBuffer = evt.target.result
-                        const array = new Uint8Array(arrayBuffer)
-
-                        const pdfDoc = await PDFLib.PDFDocument.load(array)
-                        const pages = pdfDoc.getPages()
-                        let i = 1
-
-                        for (let page of pages) {
-                            const body = await fetch('/qrcode/' + this.pdfNumber + '/' + i++)
-                            const path = (await body.text()).match(/<path (.*) d="(.*)"/)[2]
-
-                            page.moveTo(0, 0)
-                            page.drawSvgPath(path, {
-                                x: page.getWidth() - 66,
-                                y: page.getHeight(),
-                                color: PDFLib.rgb(0, 0, 0),
-                                scale: 0.2,
-                            })
-                        }
-
-                        const pdfBytes = await pdfDoc.save()
-
-                        download(pdfBytes, 'Cours ' + this.pdfNumber + '.pdf', 'application/pdf')
-                    }
-                }
             },
         },
     }).mount('#app')
