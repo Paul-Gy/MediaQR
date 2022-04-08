@@ -1,6 +1,7 @@
 import { Router } from 'itty-router'
 import { error, json, status } from 'itty-router-extras'
 import html from './html/home'
+import autoPdf from './html/autopdf'
 import edit from './html/edit'
 import notFound from './html/404'
 import notFoundError from './html/error'
@@ -23,6 +24,11 @@ router
   })
   .get('/edit', () => {
     return new Response(edit, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+  })
+  .get('/pdf', () => {
+    return new Response(autoPdf, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     })
   })
