@@ -25,8 +25,11 @@ export default `<!DOCTYPE html>
                 <div class="row g-3">
                     <div class="col-md-6 mb-3">
                         <label class="form-label" :for="'url-' + id">URL de la vidéo</label>
-                        <input v-model="info.url" type="url" class="form-control" :id="'url-' + id"
-                               required placeholder="https://tube.switch.ch/videos/...">
+                        <div class="input-group">
+                            <button @click="redirect($event, info)" class="input-group-text text-decoration-none" :id="'goto-url-' + id">Go To</button>
+                            <input v-model="info.url" type="url" class="form-control" :id="'url-' + id"
+                                   required placeholder="https://tube.switch.ch/videos/...">
+                        </div>
                     </div>
                     
                     <div class="col-md-6 mb-3">
@@ -232,7 +235,7 @@ export default `<!DOCTYPE html>
             createPdf() {
                 const input = document.getElementById('formFile')
                 const reader = new FileReader()
-
+               
                 reader.readAsArrayBuffer(input.files[0])
                 reader.onloadend = async (evt) => {
                     if (evt.target.readyState === FileReader.DONE) {
@@ -262,7 +265,9 @@ export default `<!DOCTYPE html>
                     }
                 }
             },
-        },
+            redirect(event, info){
+                window.location.href = info.url;
+            },
     }).mount('#app')
 </script>
 </body>
