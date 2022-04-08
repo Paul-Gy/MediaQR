@@ -27,7 +27,7 @@ export default `<!DOCTYPE html>
                         <div class="input-group">
                             <button @click="redirect($event, info)" class="input-group-text text-decoration-none" :id="'goto-url-' + id">Go To</button>
                             <input v-model="info.url" type="url" class="form-control" :id="'url-' + id"
-                                   required placeholder="https://tube.switch.ch/videos/...">
+                                   required placeholder="https://tube.switch.ch/videos/..." @change="checkDuplicates(data, info, id)">
                         </div>
                     </div>
                     
@@ -211,6 +211,14 @@ export default `<!DOCTYPE html>
             },
             redirect(info){
                 window.location.href = info.url;
+            },
+            checkDuplicates(data, info, id){
+                for (let i = 0; i < data.length; i++) {
+                    if(i !== id && data[i].url === info.url){
+                        //TODO SEND ALERT
+                        return;
+                    }
+                }
             },
         },
     }).mount('#app')
