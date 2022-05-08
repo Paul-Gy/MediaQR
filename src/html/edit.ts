@@ -25,7 +25,7 @@ export default `<!DOCTYPE html>
                     <div class="col-md-6 mb-3">
                         <label class="form-label" :for="'url-' + id">URL de la vidéo</label>
                         <div class="input-group">
-                            <button @click="redirect($event, info)" class="input-group-text text-decoration-none" :id="'goto-url-' + id">Go To</button>
+                            <a :href="info.url ?? '#'" target="_blank" class="btn btn-outline-primary">Go To</a>
                             <input v-model="info.url" type="url" class="form-control" :id="'url-' + id"
                                    required placeholder="https://tube.switch.ch/videos/...">
                         </div>
@@ -208,9 +208,6 @@ export default `<!DOCTYPE html>
                     this.error = err
                     this.loading = false
                 })
-            },
-            redirect(info){
-                window.location.href = info.url;
             },
         },
     }).mount('#app')

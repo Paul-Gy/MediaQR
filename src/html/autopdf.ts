@@ -32,7 +32,7 @@ export default `<!DOCTYPE html>
 
         <button type="submit" class="btn btn-primary" :disabled="loading">
             <span v-if="loading" class="spinner-border spinner-border-sm"></span>
-            Go !
+            Valider
         </button>
     </form>
 
