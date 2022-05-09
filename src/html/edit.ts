@@ -17,7 +17,7 @@ export default `<!DOCTYPE html>
     <form v-if="login" @submit.prevent="save">
         <h2>Liste des cours</h2>
 
-        <div v-for="(info, id) in data" class="card mb-3 shadow-3">
+        <div v-for="(info, id) in data" :key="id" class="card mb-3 shadow-3">
             <div class="card-body">
                 <h3 class="card-title">Cours N°{{ id + 1 }}</h3>
 
@@ -25,7 +25,7 @@ export default `<!DOCTYPE html>
                     <div class="col-md-6 mb-3">
                         <label class="form-label" :for="'url-' + id">URL de la vidéo</label>
                         <div class="input-group">
-                            <a class="btn btn-outline-primary" :href="info.url">
+                            <a class="btn btn-outline-secondary" target="_blank" :href="info.url">
                                 Go To
                             </a>
                             <input v-model="info.url" type="url" class="form-control" :id="'url-' + id"
@@ -52,9 +52,11 @@ export default `<!DOCTYPE html>
                                    placeholder="1:23">
                         </div>
 
-                        <div class="input-group mt-3" v-if="info.urls.hasOwnProperty(idd + 1)">
-                            <a class="btn btn-outline-secondary" :href="info.urls[idd + 1]">Go</a>
-                            <input v-model="info.urls[idd]" type="text" class="form-control" value=""
+                        <div class="input-group mt-3" v-if="info.urls[idd + 1] !== undefined">
+                            <a class="btn btn-outline-secondary" target="_blank" :href="info.urls[idd + 1]">
+                                Go
+                            </a>
+                            <input v-model="info.urls[idd + 1]" type="text" class="form-control" value=""
                                    placeholder="https://tube.switch.ch/videos">
                         </div>
                     </div>
@@ -104,7 +106,7 @@ export default `<!DOCTYPE html>
     </form>
 
     <hr>
-        <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mx-2" tabindex="-1" role="button" aria-disabled="true">
+        <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mx-2" target="_blank" rel="noopener">
             Switchtube
         </a>
     <hr>
@@ -157,9 +159,9 @@ export default `<!DOCTYPE html>
                         response.json().then((json) => {
                             json.forEach((info) => {
                                 if (!info.urls) {
-                                    info.urls = {};
+                                    info.urls = {}
                                 }
-                            });
+                            })
                             
                             this.data = json
                             this.login = true
@@ -185,7 +187,7 @@ export default `<!DOCTYPE html>
             },
             updateCourse(event, info) {
                 const reader = new FileReader()
-                const file = event.target.files[0];
+                const file = event.target.files[0]
 
                 if (!file) {
                     return
@@ -195,7 +197,7 @@ export default `<!DOCTYPE html>
                     const array = new Uint8Array(this.result)
                     const pdfDoc = await PDFLib.PDFDocument.load(array)
                     info.times = []
-                    info.urls = {}  //FIXME MODIF HERE
+                    info.urls = {}
 
                     for (let page of pdfDoc.getPages()) {
                         info.times.push('')
@@ -209,7 +211,7 @@ export default `<!DOCTYPE html>
                 this.success = null
                 this.error = null
                 
-                console.log(JSON.stringify(this.data))
+                console.log(this.data)
 
                 fetch('/editor/save', {
                     method: 'POST',
@@ -231,14 +233,11 @@ export default `<!DOCTYPE html>
                     this.loading = false
                 })
             },
-            redirect(info){
-                window.location.href = info.url;
-            },
             toggleUrl(urls, id){
                 if (urls.hasOwnProperty(id)) {
-                    delete urls[id];
+                    delete urls[id]
                 } else {
-                    urls[id] = '';
+                    urls[id] = ''
                 }
             },
         },
