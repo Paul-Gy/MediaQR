@@ -25,16 +25,18 @@ export default `<!DOCTYPE html>
                     <div class="col-md-6 mb-3">
                         <label class="form-label" :for="'url-' + id">URL de la vidéo</label>
                         <div class="input-group">
-                            <button @click="redirect($event, info)" class="input-group-text text-decoration-none" :id="'goto-url-' + id">Go To</button>
+                            <a class="btn btn-outline-primary" :href="info.url">
+                                Go To
+                            </a>
                             <input v-model="info.url" type="url" class="form-control" :id="'url-' + id"
                                    required placeholder="https://tube.switch.ch/videos/..." @change="checkDuplicates(data, info, id)">
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6 mb-3">
                         <label class="form-label" :for="'file-' + id">PDF du cours</label>
                         <input type="file" class="form-control" :id="'file-' + id"
-                                @change="updateCourse($event, info)" accept=".pdf">
+                               @change="updateCourse($event, info)" accept=".pdf">
                     </div>
                 </div>
 
@@ -43,9 +45,17 @@ export default `<!DOCTYPE html>
                 <div class="row g-3">
                     <div v-for="(time, idd) in info.times" :key="idd" class="mb-3 col-md-6">
                         <div class="input-group">
-                            <span class="input-group-text">Slide N°{{ idd + 1 }}</span>
+                            <button type="button" class="btn btn-outline-primary" @click="toggleUrl(info.urls, idd + 1)">
+                                Slide N°{{ idd + 1 }}
+                            </button>
                             <input v-model="info.times[idd]" type="text" pattern="[0-9]+(:[0-9]+)?(:[0-9]+)?|(-1)" class="form-control"
                                    placeholder="1:23">
+                        </div>
+
+                        <div class="input-group mt-3" v-if="info.urls.hasOwnProperty(idd + 1)">
+                            <a class="btn btn-outline-secondary" :href="info.urls[idd + 1]">Go</a>
+                            <input v-model="info.urls[idd]" type="text" class="form-control" value=""
+                                   placeholder="https://tube.switch.ch/videos">
                         </div>
                     </div>
                 </div>
@@ -64,7 +74,7 @@ export default `<!DOCTYPE html>
                 <button type="button" class="btn btn-primary mb-2" @click="addCourse">
                     Ajouter un cours
                 </button>
-                
+
                 <button type="button" class="btn btn-warning mb-2" @click="data.pop()">
                     Retirer un cours
                 </button>
@@ -92,9 +102,11 @@ export default `<!DOCTYPE html>
             </div>
         </div>
     </form>
-    
+
     <hr>
-        <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mx-2" tabindex="-1" role="button" aria-disabled="true">Switchtube</a>
+        <a href="https://tube.switch.ch/channels/X4KJsG1os5" class="btn btn-info mx-2" tabindex="-1" role="button" aria-disabled="true">
+            Switchtube
+        </a>
     <hr>
 
     <div class="row justify-content-center mb-3">
@@ -143,6 +155,12 @@ export default `<!DOCTYPE html>
                 .then((response) => {
                     if (response.ok) {
                         response.json().then((json) => {
+                            json.forEach((info) => {
+                                if (!info.urls) {
+                                    info.urls = {};
+                                }
+                            });
+                            
                             this.data = json
                             this.login = true
                         })
@@ -161,21 +179,23 @@ export default `<!DOCTYPE html>
             addCourse() {
                 this.data.push({
                     url: '',
-                    times: []
+                    times: [],
+                    urls: {},
                 })
             },
             updateCourse(event, info) {
                 const reader = new FileReader()
                 const file = event.target.files[0];
-                
+
                 if (!file) {
                     return
                 }
 
                 reader.onload = async function () {
-                    const array = new Uint8Array(this.result)                    
+                    const array = new Uint8Array(this.result)
                     const pdfDoc = await PDFLib.PDFDocument.load(array)
                     info.times = []
+                    info.urls = {}  //FIXME MODIF HERE
 
                     for (let page of pdfDoc.getPages()) {
                         info.times.push('')
@@ -188,6 +208,8 @@ export default `<!DOCTYPE html>
                 this.loading = true
                 this.success = null
                 this.error = null
+                
+                console.log(JSON.stringify(this.data))
 
                 fetch('/editor/save', {
                     method: 'POST',
@@ -212,12 +234,11 @@ export default `<!DOCTYPE html>
             redirect(info){
                 window.location.href = info.url;
             },
-            checkDuplicates(data, info, id){
-                for (let i = 0; i < data.length; i++) {
-                    if(i !== id && data[i].url === info.url){
-                        //TODO SEND ALERT
-                        return;
-                    }
+            toggleUrl(urls, id){
+                if (urls.hasOwnProperty(id)) {
+                    delete urls[id];
+                } else {
+                    urls[id] = '';
                 }
             },
         },

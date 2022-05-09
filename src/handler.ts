@@ -12,7 +12,7 @@ declare const KV_STORAGE: KVNamespace
 interface VideoData {
   url: string
   times: string[]
-  urls: string[] //FIXME HERE
+  urls: Record<number, string>
 }
 
 const router = Router()
@@ -96,17 +96,9 @@ router
       })
     }
 
-    //FIXME MODIF HERE
-    const url = info.urls[slide - 1]
+    const url = info.urls ? (info.urls[slide] ?? info.url) : info.url;
 
-    if(url && url !== "") {
-      return Response.redirect(url + (slide > 0 ? '#' + time : ''))
-    }
-
-    //FIXME END MODIF HERE
-
-
-    return Response.redirect(info.url + (slide > 0 ? '#' + time : ''))
+    return Response.redirect(url + (slide > 0 ? '#' + time : ''))
   })
   .all('*', missing)
 
