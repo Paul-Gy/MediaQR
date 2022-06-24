@@ -27,6 +27,8 @@ export default `<!DOCTYPE html>
     <h1>Time QR Code - Physique STI</h1>
 
     <h2>Stats</h2>
+    
+    <h3 id="total"></h3>
 
     <div class="row my-5">
         <div class="col-md-6">
@@ -52,6 +54,8 @@ export default `<!DOCTYPE html>
 <script src="https://code.highcharts.com/modules/drilldown.js"></script>
 <script>
 const data = JSON.parse('{data}')
+
+document.getElementById('total').innerText = 'Total : ' + data.total
 
 Highcharts.chart('coursesStats', {
     chart: {
@@ -87,7 +91,7 @@ Highcharts.stockChart('dateStats', {
     series: [{
         name: 'Total',
         data: Object.entries(data.dates).map(([date, count]) => {
-            return [Date.parse(date + 'T00:00:00'), count]
+            return [Date.parse(date + 'T12:00:00'), count]
         }).sort((a, b) => b[0] - a[0]),
     }],
     accessibility: {

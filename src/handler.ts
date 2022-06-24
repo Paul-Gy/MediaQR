@@ -10,7 +10,7 @@ import notFoundError from './html/error'
 declare const EDIT_TOKEN: string
 declare const KV_STORAGE: KVNamespace
 
-type Stats = Record<string, Record<string, string[]>>
+type Stats = Record<number, Record<number, string[]>>
 
 interface VideoData {
   url: string
@@ -100,6 +100,8 @@ router
       return missing()
     }
 
+    await incrementStats(course, slide)
+
     if (time == '-1') {
       return new Response(notFoundError, {
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -123,7 +125,7 @@ function missing(): Response {
 }
 
 async function fetchStats(): Promise<Record<string, unknown>> {
-  const rawData: Stats = (await KV_STORAGE.get('stats', 'json')) || {}
+  const rawData = await loadStats()
   const dates: Record<string, number> = {}
   const data = Object.entries(rawData).map(([key, values]) => {
     return {
@@ -142,11 +144,14 @@ async function fetchStats(): Promise<Record<string, unknown>> {
       ]),
     }
   })
+  let total = 0
 
   for (const values of Object.values(rawData)) {
     for (const visits of Object.values(values)) {
       for (const visit of visits) {
         const key = visit.substring(0, 10)
+
+        ++total
 
         if (dates[key]) {
           ++dates[key]
@@ -157,7 +162,38 @@ async function fetchStats(): Promise<Record<string, unknown>> {
     }
   }
 
-  return { data, drilldown, dates }
+  return { data, drilldown, dates, total }
+}
+
+async function incrementStats(course: number, slide: number): Promise<void> {
+  const stats = await loadStats()
+  const date = formatDate(new Date())
+  const slides = stats[course]
+
+  if (!slides) {
+    stats[course] = { [slide]: [date] }
+    await saveStats(stats)
+    return
+  }
+
+  const dates = slides[slide]
+
+  if (!dates) {
+    stats[course][slide] = [date]
+    await saveStats(stats)
+    return
+  }
+
+  stats[course][slide].push(date)
+  await saveStats(stats)
+}
+
+async function loadStats(): Promise<Stats> {
+  return (await KV_STORAGE.get('stats', 'json')) || {}
+}
+
+function saveStats(stats: Stats): Promise<void> {
+  return KV_STORAGE.put('stats', JSON.stringify(stats))
 }
 
 async function loadCourses(): Promise<Record<string, VideoData>> {
@@ -166,4 +202,15 @@ async function loadCourses(): Promise<Record<string, VideoData>> {
 
 function saveCourses(courses: Record<string, VideoData>): Promise<void> {
   return KV_STORAGE.put('courses', JSON.stringify(courses))
+}
+
+function formatDate(date: Date) {
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const seconds = date.getSeconds().toString().padStart(2, '0')
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
