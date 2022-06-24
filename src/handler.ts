@@ -3,11 +3,14 @@ import { error, json, status } from 'itty-router-extras'
 import html from './html/home'
 import autoPdf from './html/autopdf'
 import edit from './html/edit'
+import statsView from './html/stats'
 import notFound from './html/404'
 import notFoundError from './html/error'
 
 declare const EDIT_TOKEN: string
 declare const KV_STORAGE: KVNamespace
+
+type Stats = Record<string, Record<string, string[]>>
 
 interface VideoData {
   url: string
@@ -20,6 +23,13 @@ const router = Router()
 router
   .get('/', () => {
     return new Response(html, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+  })
+  .get('/stats', async () => {
+    const stats = await fetchStats()
+
+    return new Response(statsView.replace('{data}', JSON.stringify(stats)), {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     })
   })
@@ -96,7 +106,7 @@ router
       })
     }
 
-    const url = info.urls ? (info.urls[slide] ?? info.url) : info.url;
+    const url = info.urls ? info.urls[slide] ?? info.url : info.url
 
     return Response.redirect(url + (slide > 0 ? '#' + time : ''))
   })
@@ -110,6 +120,44 @@ function missing(): Response {
   return new Response(notFound, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   })
+}
+
+async function fetchStats(): Promise<Record<string, unknown>> {
+  const rawData: Stats = (await KV_STORAGE.get('stats', 'json')) || {}
+  const dates: Record<string, number> = {}
+  const data = Object.entries(rawData).map(([key, values]) => {
+    return {
+      name: 'Cours ' + key,
+      drilldown: key,
+      y: Object.values(values).reduce((sum, val) => sum + val.length, 0),
+    }
+  })
+  const drilldown = Object.entries(rawData).map(([courseKey, values]) => {
+    return {
+      name: 'Total',
+      id: courseKey,
+      data: Object.entries(values).map(([key, val]) => [
+        'Slide ' + key,
+        val.length,
+      ]),
+    }
+  })
+
+  for (const values of Object.values(rawData)) {
+    for (const visits of Object.values(values)) {
+      for (const visit of visits) {
+        const key = visit.substring(0, 10)
+
+        if (dates[key]) {
+          ++dates[key]
+        } else {
+          dates[key] = 1
+        }
+      }
+    }
+  }
+
+  return { data, drilldown, dates }
 }
 
 async function loadCourses(): Promise<Record<string, VideoData>> {
