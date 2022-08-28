@@ -1,16 +1,14 @@
-import { Router } from 'itty-router'
-import { error, json, status } from 'itty-router-extras'
-import html from './html/home'
-import autoPdf from './html/autopdf'
-import edit from './html/edit'
-import statsView from './html/stats'
-import notFound from './html/404'
-import notFoundError from './html/error'
+import { Obj, Router } from 'itty-router'
+import { error, json, missing, status } from 'itty-router-extras'
 
-declare const EDIT_TOKEN: string
-declare const KV_STORAGE: KVNamespace
-
+type RouteRequest = Request & { params: Obj }
 type Stats = Record<number, Record<number, string[]>>
+
+interface Env {
+  R2_BUCKET: R2Bucket
+  KV_STORAGE: KVNamespace
+  EDIT_TOKEN: string
+}
 
 interface VideoData {
   url: string
@@ -21,45 +19,37 @@ interface VideoData {
 const router = Router()
 
 router
-  .get('/', () => {
-    return new Response(html, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    })
+  .get('/api/:id/stats', async (request, env: Env) => {
+    return json(await fetchStats(env, request.params?.id ?? ''))
   })
-  .get('/stats', async () => {
-    const stats = await fetchStats()
-
-    return new Response(statsView.replace('{data}', JSON.stringify(stats)), {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    })
-  })
-  .get('/edit', () => {
-    return new Response(edit, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    })
-  })
-  .get('/pdf', () => {
-    return new Response(autoPdf, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    })
-  })
-  .get('/editor/load', async (request: Request) => {
-    if (request.headers.get('X-Token') !== EDIT_TOKEN) {
+  .get('/api/:id/edit', async (request: RouteRequest, env: Env) => {
+    if (request.headers.get('X-Token') !== env.EDIT_TOKEN) {
       return error(403, 'Invalid token')
     }
 
-    return json(await loadCourses())
+    return json(await loadCourses(env, request.params?.id))
   })
-  .post('/editor/save', async (request: Request) => {
-    if (request.headers.get('X-Token') !== EDIT_TOKEN) {
+  .post('/api/:id/edit', async (request: RouteRequest, env: Env) => {
+    if (request.headers.get('X-Token') !== env.EDIT_TOKEN) {
       return error(403, 'Invalid token')
     }
 
-    await saveCourses(await request.json())
+    await saveCourses(env, request.params?.id, await request.json())
 
     return status(200)
   })
-  .get('/qrcode/:course/:slide', async ({ url, params }) => {
+  .post('/api/:id/pdf/:course', async (request: RouteRequest, env: Env) => {
+    const params = request.params;
+    const key = `pdf-${params?.id}-${params?.course}-${Date.now()}`
+
+    await env.R2_BUCKET.put(key, request.body, {
+      httpMetadata: request.headers,
+    })
+
+    return status(200)
+  })
+  .get('/api/:id/qr/:course/:slide', async ({ url, params }) => {
+    const id = params?.id
     const course = params?.course
     const slide = params?.slide ? parseInt(params.slide) : -1
     const uri = new URL(url)
@@ -67,7 +57,7 @@ router
     // TODO We should generate QR Codes ourselves.
     const body = await fetch('https://qrcode.show/', {
       method: 'POST',
-      body: `${uri.origin}/v/${course}/${slide}`,
+      body: `${uri.origin}/c/${id}/${course}/${slide}`,
       headers: {
         accept: 'image/svg+xml',
       },
@@ -79,7 +69,9 @@ router
       },
     })
   })
-  .get('/v/:course/:slide', async ({ params }) => {
+  .get('/c/:id/:course/:slide', async (request, env: Env) => {
+    const params = request.params
+    const id = params?.id ?? ''
     const course = params?.course ? parseInt(params.course) : -1
     const slide = params?.slide ? parseInt(params.slide) : -1
 
@@ -87,23 +79,23 @@ router
       return missing()
     }
 
-    const courses: Record<string, VideoData> = await loadCourses()
+    const courses: Record<string, VideoData> = await loadCourses(env, id)
     const info = courses[course - 1]
 
     if (!info) {
-      return missing()
+      return fetch(request as Request) // TODO special error view ?
     }
 
     const time = info.times[slide - 1]
 
     if (!time) {
-      return missing()
+      return fetch(request as Request) // TODO special error view ?
     }
 
-    await incrementStats(course, slide)
+    await incrementStats(env, id, course, slide)
 
     if (time == '-1') {
-      return new Response(notFoundError, {
+      return new Response('notFoundError', { // TODO special error view
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
       })
     }
@@ -112,20 +104,19 @@ router
 
     return Response.redirect(url + (slide > 0 ? '#' + time : ''))
   })
-  .all('*', missing)
+  .all('*', () => missing())
 
-export async function handleRequest(request: Request): Promise<Response> {
-  return router.handle(request)
+export default {
+  fetch(request: Request, env: Env): Promise<Response> {
+    return router.handle(request, env)
+  },
 }
 
-function missing(): Response {
-  return new Response(notFound, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
-  })
-}
-
-async function fetchStats(): Promise<Record<string, unknown>> {
-  const rawData = await loadStats()
+async function fetchStats(
+  env: Env,
+  id: string,
+): Promise<Record<string, unknown>> {
+  const rawData = await loadStats(env, id)
   const dates: Record<string, number> = {}
   const data = Object.entries(rawData).map(([key, values]) => {
     return {
@@ -165,14 +156,19 @@ async function fetchStats(): Promise<Record<string, unknown>> {
   return { data, drilldown, dates, total }
 }
 
-async function incrementStats(course: number, slide: number): Promise<void> {
-  const stats = await loadStats()
+async function incrementStats(
+  env: Env,
+  id: string,
+  course: number,
+  slide: number,
+): Promise<void> {
+  const stats = await loadStats(env, id)
   const date = formatDate(new Date())
   const slides = stats[course]
 
   if (!slides) {
     stats[course] = { [slide]: [date] }
-    await saveStats(stats)
+    await saveStats(env, id, stats)
     return
   }
 
@@ -180,28 +176,35 @@ async function incrementStats(course: number, slide: number): Promise<void> {
 
   if (!dates) {
     stats[course][slide] = [date]
-    await saveStats(stats)
+    await saveStats(env, id, stats)
     return
   }
 
   stats[course][slide].push(date)
-  await saveStats(stats)
+  await saveStats(env, id, stats)
 }
 
-async function loadStats(): Promise<Stats> {
-  return (await KV_STORAGE.get('stats', 'json')) || {}
+async function loadStats(env: Env, id: string): Promise<Stats> {
+  return (await env.KV_STORAGE.get('stats-' + id, 'json')) || {}
 }
 
-function saveStats(stats: Stats): Promise<void> {
-  return KV_STORAGE.put('stats', JSON.stringify(stats))
+function saveStats(env: Env, id: string, stats: Stats): Promise<void> {
+  return env.KV_STORAGE.put('stats-' + id, JSON.stringify(stats))
 }
 
-async function loadCourses(): Promise<Record<string, VideoData>> {
-  return (await KV_STORAGE.get('courses', 'json')) || {}
+async function loadCourses(
+  env: Env,
+  id: string,
+): Promise<Record<string, VideoData>> {
+  return (await env.KV_STORAGE.get('courses-' + id, 'json')) || {}
 }
 
-function saveCourses(courses: Record<string, VideoData>): Promise<void> {
-  return KV_STORAGE.put('courses', JSON.stringify(courses))
+function saveCourses(
+  env: Env,
+  id: string,
+  courses: Record<string, VideoData>,
+): Promise<void> {
+  return env.KV_STORAGE.put('courses-' + id, JSON.stringify(courses))
 }
 
 function formatDate(date: Date) {

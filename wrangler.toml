@@ -1,12 +1,10 @@
-name = "time-qr"
+name = "qr"
 type = "javascript"
-zone_id = ""
-account_id = ""
-route = ""
+main = "./src/handler.ts"
 workers_dev = true
 compatibility_date = "2022-02-25"
 
-kv-namespaces = [
+kv_namespaces = [
     { binding = "KV_STORAGE", id = "9f7fd0d25df4437e9651349aa9880eec" },
 ]
 
@@ -15,5 +13,7 @@ EDIT_TOKEN = "STI2"
 
 [build]
 command = "npm install && npm run build"
-[build.upload]
-format = "service-worker"
+
+[[r2_buckets]]
+binding = 'R2_BUCKET'
+bucket_name = 'qr-epfl'
