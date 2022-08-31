@@ -6,8 +6,8 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const fileInput = ref<HTMLInputElement | null>(null)
-const pdfNumber = ref<number | undefined>()
+const fileInput = ref<HTMLInputElement>()
+const pdfNumber = ref<number>()
 const loading = ref(false)
 
 function downloadFile(data: ArrayBuffer, name: string, type: string): void {

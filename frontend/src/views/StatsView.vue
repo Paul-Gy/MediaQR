@@ -17,8 +17,8 @@ interface StatsResponse {
 
 const route = useRoute()
 
-const stats = ref<StatsResponse | null>()
-const errorMessage = ref<string | undefined>()
+const stats = ref<StatsResponse>()
+const errorMessage = ref<string>()
 
 onMounted(async () => {
   try {

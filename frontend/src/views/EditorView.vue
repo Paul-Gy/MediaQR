@@ -10,17 +10,17 @@ interface CourseData {
   urls: Record<number, string>
 }
 
-const successMessage = ref('')
-const errorMessage = ref('')
-const editToken = ref('')
-const authenticated = ref(false)
-const loading = ref(false)
-const data = reactive<CourseData[]>([])
-
 const route = useRoute()
 
+const authenticated = ref(false)
+const loading = ref(false)
+const editToken = ref('')
+const successMessage = ref<string>()
+const errorMessage = ref<string>()
+const data = reactive<CourseData[]>([])
+
 function toggleUrl(urls: Record<string, string>, id: number) {
-  if (urls.hasOwnProperty(id)) {
+  if (id in urls) {
     delete urls[id]
   } else {
     urls[id] = ''
