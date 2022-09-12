@@ -1,14 +1,34 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { PDFDocument, rgb } from 'pdf-lib'
+import { PDFDocument, PDFName, rgb, PDFString } from 'pdf-lib'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
+const BASE_URL = "https://physique-epfl.pgerry.com"
+
 const fileInput = ref<HTMLInputElement>()
 const pdfNumber = ref<number>()
 const loading = ref(false)
+
+async function createPageLinkAnnotation(page, uri, top_right_x, top_r_y, bottom_l_x, bottom_l_y) {
+  return page.doc.context.register(
+      page.doc.context.obj({
+        Type: 'Annot',
+        Subtype: 'Link',
+        Rect: [top_right_x, top_r_y, bottom_l_x, bottom_l_y],
+        Border: [0, 0, 2],
+        C: [0, 0, 1],
+        A: {
+          Type: 'Action',
+          S: 'URI',
+          URI: PDFString.of(uri),
+        },
+      }),
+  );
+}
+
 
 function downloadFile(data: ArrayBuffer, name: string, type: string): void {
   const blob = new Blob([data], { type })
@@ -39,6 +59,9 @@ async function createPdf(pdfBytes: ArrayBuffer) {
       color: rgb(0, 0, 0),
       scale: 0.2,
     })
+
+    const link = await createPageLinkAnnotation(page, `${BASE_URL}/c/${id}/${pdfNumber.value}/${i}`, page.getWidth() - 5, page.getHeight() - 8, page.getWidth() - 60, page.getHeight() - 60);
+    page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([link]));
   }
 
   const savedPdf = await pdfDoc.save()
