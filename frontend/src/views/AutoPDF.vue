@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { PDFDocument, PDFName, rgb, PDFString } from 'pdf-lib'
+import {PDFDocument, PDFName, rgb, PDFString, PDFArray} from 'pdf-lib'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -61,7 +61,11 @@ async function createPdf(pdfBytes: ArrayBuffer) {
     })
 
     const link = await createPageLinkAnnotation(page, `${BASE_URL}/c/${id}/${pdfNumber.value}/${i}`, page.getWidth() - 5, page.getHeight() - 8, page.getWidth() - 60, page.getHeight() - 60);
-    page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([link]));
+
+    const newAnnots = page.node.lookup(PDFName.of('Annots'), PDFArray).asArray();
+    newAnnots.push(link);
+
+    page.node.set(PDFName.of('Annots'), pdfDoc.context.obj(newAnnots));
   }
 
   const savedPdf = await pdfDoc.save()
