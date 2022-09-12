@@ -20,7 +20,9 @@ const router = Router()
 
 router
   .get('/api/:id/stats', async (request, env: Env) => {
-    return json(await fetchStats(env, request.params?.id ?? ''))
+    const stats = await fetchStats(env, request.params?.id ?? '')
+
+    return Object.keys(stats).length > 0 ? json(stats) : missing()
   })
   .get('/api/:id/edit', async (request: RouteRequest, env: Env) => {
     if (request.headers.get('X-Token') !== env.EDIT_TOKEN) {
@@ -39,7 +41,7 @@ router
     return status(200)
   })
   .post('/api/:id/pdf/:course', async (request: RouteRequest, env: Env) => {
-    const params = request.params;
+    const params = request.params
     const key = `pdf-${params?.id}-${params?.course}-${Date.now()}`
 
     await env.R2_BUCKET.put(key, request.body, {
@@ -58,46 +60,40 @@ router
     const body = await fetch('https://qrcode.show/', {
       method: 'POST',
       body: `${uri.origin}/c/${id}/${course}/${slide}`,
-      headers: {
-        accept: 'image/svg+xml',
-      },
+      headers: { Accept: 'image/svg+xml' },
     })
 
     return new Response(body.body, {
-      headers: {
-        'Content-Type': 'image/svg+xml',
-      },
+      headers: { 'Content-Type': 'image/svg+xml' },
     })
   })
-  .get('/c/:id/:course/:slide', async (request, env: Env) => {
+  .get('/c/:id/:course/:slide', async (request: RouteRequest, env: Env) => {
     const params = request.params
     const id = params?.id ?? ''
     const course = params?.course ? parseInt(params.course) : -1
     const slide = params?.slide ? parseInt(params.slide) : -1
 
     if (isNaN(course) || course < 1 || isNaN(slide) || slide < 1) {
-      return missing()
+      return fetch(request)
     }
 
     const courses: Record<string, VideoData> = await loadCourses(env, id)
     const info = courses[course - 1]
 
     if (!info) {
-      return fetch(request as Request) // TODO special error view ?
+      return fetch(request)
     }
 
     const time = info.times[slide - 1]
 
     if (!time) {
-      return fetch(request as Request) // TODO special error view ?
+      return fetch(request)
     }
 
     await incrementStats(env, id, course, slide)
 
     if (time == '-1') {
-      return new Response('notFoundError', { // TODO special error view
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      })
+      return fetch(request) // TODO ghost ?
     }
 
     const url = info.urls ? info.urls[slide] ?? info.url : info.url

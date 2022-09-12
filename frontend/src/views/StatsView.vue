@@ -102,7 +102,7 @@ function createStatsCharts() {
 <template>
   <h2>Stats</h2>
 
-  <div class="row mb-5" v-if="stats && stats.total">
+  <div class="row mb-5" v-if="stats && stats.total > 0">
     <h3 class="mb-5">Total: {{ stats.total }}</h3>
 
     <div class="col-md-6">
