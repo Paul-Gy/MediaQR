@@ -1,34 +1,41 @@
 <script setup lang="ts">
 import axios from 'axios'
-import {PDFDocument, PDFName, rgb, PDFString, PDFArray} from 'pdf-lib'
+import {
+  rgb,
+  PDFDocument,
+  PDFName,
+  PDFString,
+  PDFArray,
+  PDFPage,
+} from 'pdf-lib'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const BASE_URL = "https://physique-epfl.pgerry.com"
-
 const fileInput = ref<HTMLInputElement>()
 const pdfNumber = ref<number>()
 const loading = ref(false)
 
-async function createPageLinkAnnotation(page, uri, top_right_x, top_r_y, bottom_l_x, bottom_l_y) {
-  return page.doc.context.register(
-      page.doc.context.obj({
-        Type: 'Annot',
-        Subtype: 'Link',
-        Rect: [top_right_x, top_r_y, bottom_l_x, bottom_l_y],
-        Border: [0, 0, 2],
-        C: [0, 0, 1],
-        A: {
-          Type: 'Action',
-          S: 'URI',
-          URI: PDFString.of(uri),
-        },
-      }),
-  );
-}
+function registerPageLink(page: PDFPage, uri: string, box: number[]) {
+  const newAnnotation = page.doc.context.obj({
+    Type: 'Annot',
+    Subtype: 'Link',
+    Rect: box,
+    Border: [0, 0, 0],
+    C: [0, 0, 1],
+    A: {
+      Type: 'Action',
+      S: 'URI',
+      URI: PDFString.of(uri),
+    },
+  })
 
+  const annotations = page.node.lookup(PDFName.of('Annots'), PDFArray).asArray()
+  annotations.push(page.doc.context.register(newAnnotation))
+
+  page.node.set(PDFName.of('Annots'), page.doc.context.obj(annotations))
+}
 
 function downloadFile(data: ArrayBuffer, name: string, type: string): void {
   const blob = new Blob([data], { type })
@@ -44,12 +51,13 @@ function downloadFile(data: ArrayBuffer, name: string, type: string): void {
 
 async function createPdf(pdfBytes: ArrayBuffer) {
   const id = route.params.id
+  const baseUrl = `${window.location.origin}/c/${id}/${pdfNumber.value}/`
   const pdfDoc = await PDFDocument.load(pdfBytes)
   const pages = pdfDoc.getPages()
   let i = 1
 
   for (const page of pages) {
-    const res = await axios.get(`/api/${id}/qr/${pdfNumber.value}/${i++}`)
+    const res = await axios.get(`/api/${id}/qr/${pdfNumber.value}/${i}`)
     const path = res.data.match(/<path (.*) d="(.*)"/)[2]
 
     page.moveTo(0, 0)
@@ -60,12 +68,12 @@ async function createPdf(pdfBytes: ArrayBuffer) {
       scale: 0.2,
     })
 
-    const link = await createPageLinkAnnotation(page, `${BASE_URL}/c/${id}/${pdfNumber.value}/${i}`, page.getWidth() - 5, page.getHeight() - 8, page.getWidth() - 60, page.getHeight() - 60);
-
-    const newAnnots = page.node.lookup(PDFName.of('Annots'), PDFArray).asArray();
-    newAnnots.push(link);
-
-    page.node.set(PDFName.of('Annots'), pdfDoc.context.obj(newAnnots));
+    registerPageLink(page, baseUrl + i++, [
+      page.getWidth() - 5,
+      page.getHeight() - 5,
+      page.getWidth() - 60,
+      page.getHeight() - 60,
+    ])
   }
 
   const savedPdf = await pdfDoc.save()
