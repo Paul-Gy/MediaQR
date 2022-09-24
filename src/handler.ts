@@ -50,23 +50,6 @@ router
 
     return status(200)
   })
-  .get('/api/:id/qr/:course/:slide', async ({ url, params }) => {
-    const id = params?.id
-    const course = params?.course
-    const slide = params?.slide ? parseInt(params.slide) : -1
-    const uri = new URL(url)
-
-    // TODO We should generate QR Codes ourselves.
-    const body = await fetch('https://qrcode.show/', {
-      method: 'POST',
-      body: `${uri.origin}/c/${id}/${course}/${slide}`,
-      headers: { Accept: 'image/svg+xml' },
-    })
-
-    return new Response(body.body, {
-      headers: { 'Content-Type': 'image/svg+xml' },
-    })
-  })
   .get('/c/:id/:course/:slide', async (request: RouteRequest, env: Env) => {
     const params = request.params
     const id = params?.id ?? ''

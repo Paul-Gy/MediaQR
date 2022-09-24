@@ -8,6 +8,7 @@ import {
   PDFArray,
   PDFPage,
 } from 'pdf-lib'
+import QRCode from 'qrcode-svg'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -57,11 +58,21 @@ async function createPdf(pdfBytes: ArrayBuffer) {
   let i = 1
 
   for (const page of pages) {
-    const res = await axios.get(`/api/${id}/qr/${pdfNumber.value}/${i}`)
-    const path = res.data.match(/<path (.*) d="(.*)"/)[2]
+    const svg = new QRCode({
+      content: baseUrl + i,
+      join: true,
+      ecl: 'L',
+      width: 333,
+      height: 333,
+    }).svg({ container: 'none' })
+    const matches = svg.match(/<path (.*) d="(.*)"/)
+
+    if (!matches) {
+      continue
+    }
 
     page.moveTo(0, 0)
-    page.drawSvgPath(path, {
+    page.drawSvgPath(matches[2], {
       x: page.getWidth() - 66,
       y: page.getHeight(),
       color: rgb(0, 0, 0),
@@ -91,10 +102,6 @@ async function submitPdf() {
 
   loading.value = true
 
-  await axios.post(`/api/${route.params.id}/pdf/${pdfNumber.value}`, file, {
-    headers: { 'Content-Type': file.type },
-  })
-
   reader.readAsArrayBuffer(file)
   reader.onloadend = async (event) => {
     if (event.target?.readyState === FileReader.DONE) {
@@ -103,6 +110,10 @@ async function submitPdf() {
 
     loading.value = false
   }
+
+  await axios.post(`/api/${route.params.id}/pdf/${pdfNumber.value}`, file, {
+    headers: { 'Content-Type': file.type },
+  })
 }
 </script>
 

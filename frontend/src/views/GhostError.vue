@@ -11,7 +11,8 @@ const rainbow = Math.random() > 0.9
     alt="Error"
     class="img-fluid"
     src="@/assets/error-rainbow.svg"
+    width="400"
   />
 
-  <img v-else alt="Error" class="img-fluid" src="@/assets/error.svg" />
+  <img v-else alt="No" class="img-fluid" src="@/assets/error.svg" width="400" />
 </template>

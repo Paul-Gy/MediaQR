@@ -5,7 +5,8 @@ import axios from 'axios'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Highcharts from 'highcharts/highstock'
-
+import HighchartsDrilldown from 'highcharts/modules/drilldown'
+import Highcharts3d from 'highcharts/highcharts-3d'
 import BootstrapLoader from '@/components/BootstrapLoader.vue'
 
 interface StatsResponse {
@@ -14,6 +15,9 @@ interface StatsResponse {
   dates: Record<string, number>
   total: number
 }
+
+HighchartsDrilldown(Highcharts)
+Highcharts3d(Highcharts)
 
 const route = useRoute()
 
@@ -83,7 +87,7 @@ function createStatsCharts() {
       renderTo: 'dateStats',
     },
     title: {
-      text: 'Vues par jour',
+      text: 'Nombre de vues par jour',
     },
     series: [
       {
