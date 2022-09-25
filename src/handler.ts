@@ -1,3 +1,4 @@
+import { parse } from 'cookie'
 import { Obj, Router } from 'itty-router'
 import { error, json, missing, status } from 'itty-router-extras'
 
@@ -73,15 +74,18 @@ router
       return fetch(request)
     }
 
-    await incrementStats(env, id, course, slide)
+    await addCount(env, id, course, slide)
 
     if (time == '-1') {
       return fetch(request) // TODO ghost ?
     }
 
-    const url = info.urls ? info.urls[slide] ?? info.url : info.url
+    const redirectUrl = info.urls ? info.urls[slide] ?? info.url : info.url
+    const headers = new Headers({ 'Location': redirectUrl })
 
-    return Response.redirect(url + (slide > 0 ? '#' + time : ''))
+    await handleSession(request, env, id, headers)
+
+    return new Response(null, { status: 302, headers })
   })
   .all('*', () => missing())
 
@@ -91,10 +95,7 @@ export default {
   },
 }
 
-async function fetchStats(
-  env: Env,
-  id: string,
-): Promise<Record<string, unknown>> {
+async function fetchStats(env: Env, id: string) {
   const rawData = await loadStats(env, id)
   const dates: Record<string, number> = {}
   const data = Object.entries(rawData).map(([key, values]) => {
@@ -135,12 +136,32 @@ async function fetchStats(
   return { data, drilldown, dates, total }
 }
 
-async function incrementStats(
+async function handleSession(
+  request: Request,
   env: Env,
   id: string,
-  course: number,
-  slide: number,
-): Promise<void> {
+  headers: Headers,
+) {
+  const sessions = await loadSessions(env, id)
+  const cookies = parse(request.headers.get('Cookie') || '')
+  let sessionId = cookies['session_uid']
+
+  if (!sessionId) {
+    sessionId = Math.random().toString(16).substring(2)
+    const cookieHeader = `session_uid=${sessionId}; Max-Age=15552000; Path=/; Secure` // 6 months
+    headers.set('Set-Cookie', cookieHeader)
+  }
+
+  if (sessions.includes(sessionId)) {
+    return
+  }
+
+  sessions.push(sessionId)
+
+  await env.KV_STORAGE.put('sessions-' + id, JSON.stringify(sessions))
+}
+
+async function addCount(env: Env, id: string, course: number, slide: number) {
   const stats = await loadStats(env, id)
   const date = formatDate(new Date())
   const slides = stats[course]
@@ -165,6 +186,10 @@ async function incrementStats(
 
 async function loadStats(env: Env, id: string): Promise<Stats> {
   return (await env.KV_STORAGE.get('stats-' + id, 'json')) || {}
+}
+
+async function loadSessions(env: Env, id: string): Promise<string[]> {
+  return (await env.KV_STORAGE.get('sessions-' + id, 'json')) || []
 }
 
 function saveStats(env: Env, id: string, stats: Stats): Promise<void> {
