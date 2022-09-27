@@ -80,7 +80,9 @@ router
       return fetch(request) // TODO ghost ?
     }
 
-    const redirectUrl = info.urls ? info.urls[slide] ?? info.url : info.url
+    let redirectUrl = info.urls ? info.urls[slide] ?? info.url : info.url
+    redirectUrl = redirectUrl + (slide > 0 ? '#' + time : '')
+
     const headers = new Headers({ 'Location': redirectUrl })
 
     await handleSession(request, env, id, headers)
