@@ -1,7 +1,5 @@
 name = "qr"
-type = "javascript"
 main = "./src/handler.ts"
-workers_dev = true
 compatibility_date = "2022-02-25"
 
 kv_namespaces = [
@@ -10,9 +8,7 @@ kv_namespaces = [
 
 [vars]
 EDIT_TOKEN = "STI2"
-
-[build]
-command = "npm install && npm run build"
+R2_BUCKET_DOMAIN = "qr-storage.pgerry.com"
 
 [[r2_buckets]]
 binding = 'R2_BUCKET'

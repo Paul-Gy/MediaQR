@@ -2,14 +2,13 @@
   "name": "epfl-qr",
   "version": "1.0.0",
   "description": "QR codes based video indexing for EPFL.",
-  "main": "dist/worker.js",
   "scripts": {
-    "build": "webpack",
+    "dev": "npx wrangler dev",
+    "publish": "npx wrangler publish",
     "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}'",
-    "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}'",
-    "test": "jest --config jestconfig.json --verbose"
+    "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}'"
   },
-  "author": "author",
+  "author": "Paul Gerry",
   "license": "proprietary",
   "eslintConfig": {
     "root": true,

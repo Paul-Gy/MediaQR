@@ -90,6 +90,10 @@ async function createPdf(pdfBytes: ArrayBuffer) {
   const savedPdf = await pdfDoc.save()
 
   downloadFile(savedPdf, `Cours ${pdfNumber.value} QR.pdf`, 'application/pdf')
+
+  await axios.post(`/api/${route.params.id}/pdf/${pdfNumber.value}`, savedPdf, {
+    headers: { 'Content-Type': 'application/pdf' },
+  })
 }
 
 async function submitPdf() {
@@ -111,7 +115,7 @@ async function submitPdf() {
     loading.value = false
   }
 
-  await axios.post(`/api/${route.params.id}/pdf/${pdfNumber.value}`, file, {
+  await axios.post(`/api/${route.params.id}/pdf/${pdfNumber.value}/raw`, file, {
     headers: { 'Content-Type': file.type },
   })
 }

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { SeriesOptionsType } from 'highcharts/highstock'
+import type {
+  PointOptionsObject,
+  PointClickCallbackFunction,
+  SeriesPieOptions,
+} from 'highcharts'
 
 import axios from 'axios'
 import { onMounted, ref } from 'vue'
@@ -11,9 +15,10 @@ import BootstrapLoader from '@/components/BootstrapLoader.vue'
 
 interface StatsResponse {
   data: number[]
-  drilldown: SeriesOptionsType[]
+  drilldown: SeriesPieOptions[]
   dates: Record<string, number>
   total: number
+  basePdfUrl: string
 }
 
 HighchartsDrilldown(Highcharts)
@@ -39,9 +44,22 @@ onMounted(async () => {
 })
 
 function createStatsCharts() {
-  if (!stats.value?.total) {
+  if (!stats.value || !stats.value?.total) {
     return
   }
+
+  const series = stats.value.drilldown
+
+  series.forEach((serie) => {
+    const data = serie.data as PointOptionsObject[]
+    const url = stats.value?.basePdfUrl.replace('{id}', serie?.id || '') || '#'
+
+    const clickHandler: PointClickCallbackFunction = function () {
+      window.open(url + '#page=' + this.options.id)
+    }
+
+    data.forEach((value) => (value.events = { click: clickHandler }))
+  })
 
   new Highcharts.Chart({
     chart: {
@@ -62,17 +80,11 @@ function createStatsCharts() {
         data: stats.value.data,
       },
     ],
-    drilldown: {
-      series: stats.value.drilldown,
-    },
+    drilldown: { series },
     plotOptions: {
-      pie: {
-        depth: 25,
-      },
+      pie: { depth: 25 },
     },
-    accessibility: {
-      enabled: false,
-    },
+    accessibility: { enabled: false },
   })
 
   const dates = stats.value.dates
@@ -126,3 +138,9 @@ function createStatsCharts() {
 
   <BootstrapLoader v-else :error="errorMessage" />
 </template>
+
+<style>
+#coursesStats .highcharts-point {
+  cursor: pointer;
+}
+</style>

@@ -3,12 +3,15 @@ import { Obj, Router } from 'itty-router'
 import { error, json, missing, status } from 'itty-router-extras'
 
 type RouteRequest = Request & { params: Obj }
-type Stats = Record<number, Record<number, string[]>>
+type Stats = {
+  [course: number]: { [slide: number]: string[] }
+}
 
 interface Env {
   R2_BUCKET: R2Bucket
   KV_STORAGE: KVNamespace
   EDIT_TOKEN: string
+  R2_BUCKET_DOMAIN: string
 }
 
 interface VideoData {
@@ -41,9 +44,18 @@ router
 
     return status(200)
   })
-  .post('/api/:id/pdf/:course', async (request: RouteRequest, env: Env) => {
+  .post('/api/:id/pdf/:course/raw', async (request: RouteRequest, env: Env) => {
     const params = request.params
-    const key = `pdf-${params?.id}-${params?.course}-${Date.now()}`
+    const key = `pdf-${params?.id}-${params?.course}-${Date.now()}.pdf`
+
+    await env.R2_BUCKET.put(key, request.body, {
+      httpMetadata: request.headers,
+    })
+
+    return status(200)
+  })
+  .post('/api/:id/pdf/:course', async (request: RouteRequest, env: Env) => {
+    const key = `qr-${request.params?.id}-${request.params?.course}.pdf`
 
     await env.R2_BUCKET.put(key, request.body, {
       httpMetadata: request.headers,
@@ -80,10 +92,10 @@ router
       return fetch(request) // TODO ghost ?
     }
 
-    let redirectUrl = info.urls ? info.urls[slide] ?? info.url : info.url
-    redirectUrl = redirectUrl + (slide > 0 ? '#' + time : '')
+    const redirectUrl = info.urls ? info.urls[slide] ?? info.url : info.url
+    const urlHash = slide > 0 ? '#' + time : ''
 
-    const headers = new Headers({ 'Location': redirectUrl })
+    const headers = new Headers({ Location: redirectUrl + urlHash })
 
     await handleSession(request, env, id, headers)
 
@@ -98,33 +110,34 @@ export default {
 }
 
 async function fetchStats(env: Env, id: string) {
+  const basePdfUrl = `https://${env.R2_BUCKET_DOMAIN}/qr-${id}-{id}.pdf`
   const rawData = await loadStats(env, id)
   const dates: Record<string, number> = {}
-  const data = Object.entries(rawData).map(([key, values]) => {
-    return {
-      name: 'Cours ' + key,
-      drilldown: key,
-      y: Object.values(values).reduce((sum, val) => sum + val.length, 0),
-    }
-  })
-  const drilldown = Object.entries(rawData).map(([courseKey, values]) => {
-    return {
-      name: 'Total',
-      id: courseKey,
-      data: Object.entries(values).map(([key, val]) => [
-        'Slide ' + key,
-        val.length,
-      ]),
-    }
-  })
   let total = 0
+
+  const data = Object.entries(rawData).map(([courseId, values]) => {
+    const count = Object.entries(values)
+      .filter(([slideId]) => slideId !== '1')
+      .reduce((sum, [, dates]) => sum + dates.length, 0)
+
+    total += count
+
+    return { name: 'Cours ' + courseId, drilldown: courseId, y: count }
+  })
+  const drilldown = Object.entries(rawData).map(([courseId, values]) => {
+    const data = Object.entries(values)
+      .filter(([slideId]) => slideId !== '1')
+      .map(([key, dates]) => {
+        return { name: 'Slide ' + key, y: dates.length, id: key }
+      })
+
+    return { name: 'Total', id: courseId, data }
+  })
 
   for (const values of Object.values(rawData)) {
     for (const visits of Object.values(values)) {
       for (const visit of visits) {
         const key = visit.substring(0, 10)
-
-        ++total
 
         if (dates[key]) {
           ++dates[key]
@@ -135,7 +148,7 @@ async function fetchStats(env: Env, id: string) {
     }
   }
 
-  return { data, drilldown, dates, total }
+  return { data, drilldown, dates, total, basePdfUrl }
 }
 
 async function handleSession(
