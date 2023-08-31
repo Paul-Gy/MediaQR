@@ -3,6 +3,8 @@ import axios from 'axios'
 import { PDFDocument } from 'pdf-lib'
 import { useRoute } from 'vue-router'
 import { reactive, ref } from 'vue'
+import ExternalIcon from '@/icons/ExternalIcon.vue'
+import LinkIcon from '@/icons/LinkIcon.vue'
 
 interface CourseData {
   url: string
@@ -59,6 +61,16 @@ async function auth() {
         'X-Token': editToken.value,
       },
     })
+
+    if (response.status === 403) {
+      errorMessage.value = 'Erreur: token invalide'
+      return
+    }
+
+    if (!response.data) {
+      loading.value = false
+      return
+    }
 
     const responseData: CourseData[] = response.data
 
@@ -120,16 +132,9 @@ function updateCourse(event: Event, course: CourseData) {
         <h3 class="card-title">Cours N°{{ id + 1 }}</h3>
 
         <div class="row g-3">
-          <div class="col-md-6 mb-3">
+          <div class="col-md-12 mb-3">
             <label class="form-label" :for="'url-' + id">URL de la vidéo</label>
             <div class="input-group">
-              <a
-                class="btn btn-outline-secondary"
-                target="_blank"
-                :href="info.url"
-              >
-                Go To
-              </a>
               <input
                 v-model="info.url"
                 type="url"
@@ -138,10 +143,17 @@ function updateCourse(event: Event, course: CourseData) {
                 required
                 placeholder="https://tube.switch.ch/videos/..."
               />
+              <a
+                class="btn btn-outline-secondary"
+                target="_blank"
+                :href="info.url"
+              >
+                Ouvrir <ExternalIcon />
+              </a>
             </div>
           </div>
 
-          <div class="col-md-6 mb-3">
+          <!-- <div class="col-md-6 mb-3">
             <label class="form-label" :for="'file-' + id">PDF du cours</label>
             <input
               type="file"
@@ -150,7 +162,7 @@ function updateCourse(event: Event, course: CourseData) {
               @change="updateCourse($event, info)"
               accept=".pdf"
             />
-          </div>
+          </div>-->
         </div>
 
         <h3 class="card-title">Slides</h3>
@@ -162,13 +174,7 @@ function updateCourse(event: Event, course: CourseData) {
             class="mb-3 col-md-6"
           >
             <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-outline-primary"
-                @click="toggleUrl(info.urls, idd + 1)"
-              >
-                Slide N°{{ idd + 1 }}
-              </button>
+              <span class="input-group-text"> Slide N°{{ idd + 1 }} </span>
               <input
                 v-model="info.times[idd]"
                 type="text"
@@ -176,6 +182,14 @@ function updateCourse(event: Event, course: CourseData) {
                 class="form-control"
                 placeholder="1:23"
               />
+              <button
+                type="button"
+                class="btn btn-outline-primary"
+                title="Utiliser un lien externe"
+                @click="toggleUrl(info.urls, idd + 1)"
+              >
+                <LinkIcon />
+              </button>
             </div>
 
             <div
@@ -187,7 +201,7 @@ function updateCourse(event: Event, course: CourseData) {
                 target="_blank"
                 :href="info.urls[idd + 1]"
               >
-                Go
+                Ouvrir <ExternalIcon />
               </a>
               <input
                 v-model="info.urls[idd + 1]"
@@ -196,6 +210,10 @@ function updateCourse(event: Event, course: CourseData) {
                 value=""
                 placeholder="https://tube.switch.ch/videos"
               />
+              <span class="form-text">
+                Un lien externe peut être utilisé pour ce QR code, par exemple
+                si une slide a été présentée dans une vidéo différente.
+              </span>
             </div>
           </div>
         </div>
